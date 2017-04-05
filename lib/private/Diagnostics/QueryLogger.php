@@ -36,6 +36,23 @@ class QueryLogger implements IQueryLogger {
 	 */
 	protected $queries = [];
 
+	public function __destruct() {
+		if(\OC::$server->getSystemConfig()->getValue( "log_query", false)) {
+			foreach ($this->queries as $query){
+				// Get sql statements
+				$sqlStatement = $query->getSql();
+
+				// Get sql query parameters
+				$sqlParams = str_replace("\n", " ", var_export($query->getParams(), true));
+
+				// Get duration in msec
+				$sqlQueryDuration = strval($query->getDuration() * 1000);
+
+				\OCP\Util::writeLog('core', 'DB CALL : '.$sqlStatement.' WITH : '.$sqlParams.' TOOK : '.$sqlQueryDuration.' msec',  \OCP\Util::DEBUG);
+			}
+		}
+	}
+
 	/**
 	 * @param string $sql
 	 * @param array $params
