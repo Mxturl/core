@@ -113,7 +113,20 @@ interface IDBConnection {
 	public function insertIfNotExist($table, $input, array $compare = null);
 
 	/**
-	 * Insert or update a row value
+	 * Set a row value
+	 *
+	 * @param string $table
+	 * @param array $keys (column name => value)
+	 * @param array $values (column name => value)
+	 * @return int number of new rows
+	 * @throws \Doctrine\DBAL\DBALException
+	 * @throws PreconditionNotMetException
+	 * @since 9.0.0
+	 */
+	public function setValues($table, array $keys, array $values);
+
+	/**
+	 * Update a row value
 	 *
 	 * @param string $table
 	 * @param array $keys (column name => value)
@@ -121,11 +134,11 @@ interface IDBConnection {
 	 * @param array $updatePreconditionValues ensure values match preconditions (column name => value)
 	 * @return int number of new rows
 	 * @throws \Doctrine\DBAL\DBALException
-	 * @throws PreconditionNotMetException
-	 * @since 9.0.0
+	 * @throws PreConditionNotMetException
+	 * @since 10.0.0
 	 */
-	public function setValues($table, array $keys, array $values, array $updatePreconditionValues = []);
-
+	public function updateValues($table, array $keys, array $values, array $updatePreconditionValues = []);
+	
 	/**
 	 * Create an exclusive read+write lock on a table
 	 *

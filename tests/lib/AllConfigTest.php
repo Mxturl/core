@@ -148,9 +148,18 @@ class AllConfigTest extends \Test\TestCase {
 	public function testSetUserValueWithPreConditionFailure() {
 		$config = $this->getConfig();
 
+		// We expect that for now, there are no user keys
+		$result = $config->getUserKeys('userPreCond1', 'appPreCond');
+		$this->assertEquals(0, count($result));
+
 		$selectAllSQL = 'SELECT `userid`, `appid`, `configkey`, `configvalue` FROM `*PREFIX*preferences` WHERE `userid` = ?';
 
 		$config->setUserValue('userPreCond1', 'appPreCond', 'keyPreCond', 'valuePreCond');
+
+		// We expect that for now, there are no user keys
+		$result = $config->getUserKeys('userPreCond1', 'appPreCond');
+		$this->assertEquals(1, count($result));
+		$this->assertEquals('keyPreCond', $result[0]);
 
 		$result = $this->connection->executeQuery($selectAllSQL, ['userPreCond1'])->fetchAll();
 

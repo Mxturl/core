@@ -263,7 +263,7 @@ class Connection extends \Doctrine\DBAL\Connection implements IDBConnection {
 	}
 
 	/**
-	 * Insert or update a row value
+	 * Update a row value
 	 *
 	 * @param string $table
 	 * @param array $keys (column name => value)
@@ -273,7 +273,43 @@ class Connection extends \Doctrine\DBAL\Connection implements IDBConnection {
 	 * @throws \Doctrine\DBAL\DBALException
 	 * @throws PreConditionNotMetException
 	 */
-	public function setValues($table, array $keys, array $values, array $updatePreconditionValues = []) {
+	public function updateValues($table, array $keys, array $values, array $updatePreconditionValues = []) {
+		// value already exists, try update
+		$updateQb = $this->getQueryBuilder();
+		$updateQb->update($table);
+		foreach ($values as $name => $value) {
+			$updateQb->set($name, $updateQb->createNamedParameter($value, $this->getType($value)));
+		}
+		$where = $updateQb->expr()->andX();
+		$whereValues = array_merge($keys, $updatePreconditionValues);
+		foreach ($whereValues as $name => $value) {
+			$where->add($updateQb->expr()->eq(
+				$name,
+				$updateQb->createNamedParameter($value, $this->getType($value)),
+				$this->getType($value)
+			));
+		}
+		$updateQb->where($where);
+		$affected = $updateQb->execute();
+
+		if ($affected === 0 && !empty($updatePreconditionValues)) {
+			throw new PreConditionNotMetException();
+		}
+
+		return 0;
+	}
+
+	/**
+	 * Insert or update a row value
+	 *
+	 * @param string $table
+	 * @param array $keys (column name => value)
+	 * @param array $values (column name => value)
+	 * @return int number of new rows
+	 * @throws \Doctrine\DBAL\DBALException
+	 * @throws PreConditionNotMetException
+	 */
+	public function setValues($table, array $keys, array $values) {
 		try {
 			$insertQb = $this->getQueryBuilder();
 			$insertQb->insert($table)
@@ -285,28 +321,7 @@ class Connection extends \Doctrine\DBAL\Connection implements IDBConnection {
 			return $insertQb->execute();
 		} catch (ConstraintViolationException $e) {
 			// value already exists, try update
-			$updateQb = $this->getQueryBuilder();
-			$updateQb->update($table);
-			foreach ($values as $name => $value) {
-				$updateQb->set($name, $updateQb->createNamedParameter($value, $this->getType($value)));
-			}
-			$where = $updateQb->expr()->andX();
-			$whereValues = array_merge($keys, $updatePreconditionValues);
-			foreach ($whereValues as $name => $value) {
-				$where->add($updateQb->expr()->eq(
-					$name,
-					$updateQb->createNamedParameter($value, $this->getType($value)),
-					$this->getType($value)
-				));
-			}
-			$updateQb->where($where);
-			$affected = $updateQb->execute();
-
-			if ($affected === 0 && !empty($updatePreconditionValues)) {
-				throw new PreConditionNotMetException();
-			}
-
-			return 0;
+			return $this->updateValues($table, $keys, $values);
 		}
 	}
 

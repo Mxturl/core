@@ -215,28 +215,46 @@ class AllConfig implements \OCP\IConfig {
 		// TODO - FIXME
 		$this->fixDIInit();
 
-		$preconditionArray = [];
-		if (isset($preCondition)) {
-			$preconditionArray = [
-				'configvalue' => $preCondition,
-			];
-		}
-
-		$this->connection->setValues('preferences', [
-			'userid' => $userId,
-			'appid' => $appName,
-			'configkey' => $key,
-		], [
-			'configvalue' => $value,
-		], $preconditionArray);
-
 		// only add to the cache if we already loaded data for the user
+		$exists = false;
 		if (isset($this->userCache[$userId])) {
 			if (!isset($this->userCache[$userId][$appName])) {
 				$this->userCache[$userId][$appName] = [];
+			} else if (isset($this->userCache[$userId][$appName][$key])){
+				// Now we know that this value exists already in oc_preferences table,
+				// thus one need to update only
+				$exists = true;
 			}
 			$this->userCache[$userId][$appName][$key] = $value;
 		}
+
+		if ($exists) {
+			// Value already exists in the table, update
+			$preconditionArray = [];
+			if (isset($preCondition)) {
+				$preconditionArray = [
+					'configvalue' => $preCondition,
+				];
+			}
+			$this->connection->updateValues('preferences', [
+				'userid' => $userId,
+				'appid' => $appName,
+				'configkey' => $key,
+			], [
+				'configvalue' => $value,
+			], $preconditionArray);
+		} else {
+			// Value does not exists in the table, set
+			$this->connection->setValues('preferences', [
+				'userid' => $userId,
+				'appid' => $appName,
+				'configkey' => $key,
+			], [
+				'configvalue' => $value,
+			]);
+		}
+
+
 	}
 
 	/**

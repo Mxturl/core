@@ -119,7 +119,7 @@ class ConnectionTest extends \Test\TestCase {
 		$this->assertEquals('foo', $this->getTextValueByIntergerField(1));
 	}
 
-	public function testSetValuesOverWrite() {
+	public function testSetValuesOverWriteWithoutPrecondition() {
 		$this->makeTestTable();
 		$this->connection->setValues('table', [
 			'integerfield' => 1
@@ -127,7 +127,7 @@ class ConnectionTest extends \Test\TestCase {
 			'textfield' => 'foo'
 		]);
 
-		$this->connection->setValues('table', [
+		$this->connection->updateValues('table', [
 			'integerfield' => 1
 		], [
 			'textfield' => 'bar'
@@ -136,7 +136,7 @@ class ConnectionTest extends \Test\TestCase {
 		$this->assertEquals('bar', $this->getTextValueByIntergerField(1));
 	}
 
-	public function testSetValuesOverWritePrecondition() {
+	public function testSetValuesOverWriteWithPrecondition() {
 		$this->makeTestTable();
 		$this->connection->setValues('table', [
 			'integerfield' => 1
@@ -146,7 +146,7 @@ class ConnectionTest extends \Test\TestCase {
 			'clobfield' => 'not_null'
 		]);
 
-		$this->connection->setValues('table', [
+		$this->connection->updateValues('table', [
 			'integerfield' => 1
 		], [
 			'textfield' => 'bar'
@@ -157,10 +157,7 @@ class ConnectionTest extends \Test\TestCase {
 		$this->assertEquals('bar', $this->getTextValueByIntergerField(1));
 	}
 
-	/**
-	 * @expectedException \OCP\PreConditionNotMetException
-	 */
-	public function testSetValuesOverWritePreconditionFailed() {
+	public function testSetValuesOverWritePreconditionDoublingSetValues() {
 		$this->makeTestTable();
 		$this->connection->setValues('table', [
 			'integerfield' => 1
@@ -170,7 +167,33 @@ class ConnectionTest extends \Test\TestCase {
 			'clobfield' => 'not_null'
 		]);
 
+		// SetValues trying to update should try to insert and then update
 		$this->connection->setValues('table', [
+			'integerfield' => 1
+		], [
+			'textfield' => 'bar'
+		]);
+
+		$this->assertEquals('bar', $this->getTextValueByIntergerField(1));
+	}
+
+	/**
+	 * @expectedException \OCP\PreConditionNotMetException
+	 */
+	public function testSetValuesOverWritePreconditionFailed() {
+		$this->makeTestTable();
+
+		// Set value
+		$this->connection->setValues('table', [
+			'integerfield' => 1
+		], [
+			'textfield' => 'foo',
+			'booleanfield' => true,
+			'clobfield' => 'not_null'
+		]);
+
+		// Try to update value without matching precondition
+		$this->connection->updateValues('table', [
 			'integerfield' => 1
 		], [
 			'textfield' => 'bar'

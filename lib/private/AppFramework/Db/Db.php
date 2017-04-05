@@ -111,8 +111,15 @@ class Db implements IDb {
 	/**
 	 * @inheritdoc
 	 */
-	public function setValues($table, array $keys, array $values, array $updatePreconditionValues = []) {
-		return $this->connection->setValues($table, $keys, $values, $updatePreconditionValues);
+	public function updateValues($table, array $keys, array $values, array $updatePreconditionValues = []) {
+		return $this->connection->updateValues($table, $keys, $values, $updatePreconditionValues);
+	}
+	
+	/**
+	 * @inheritdoc
+	 */
+	public function setValues($table, array $keys, array $values) {
+		return $this->connection->setValues($table, $keys, $values);
 	}
 
 	/**
